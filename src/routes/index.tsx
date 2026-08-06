@@ -1,24 +1,50 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { Hero } from "@/components/site/Hero";
+import { About } from "@/components/site/About";
+import { SignatureDishes } from "@/components/site/SignatureDishes";
+import { MenuPreview } from "@/components/site/MenuPreview";
+import { PrivateDining } from "@/components/site/PrivateDining";
+import { Gallery } from "@/components/site/Gallery";
+import { Testimonials } from "@/components/site/Testimonials";
+import { Reservations } from "@/components/site/Reservations";
+import { Contact } from "@/components/site/Contact";
+import { SiteFooter } from "@/components/site/SiteFooter";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const TITLE = "Fine Dine — Seasonal Cuisine in Minneapolis";
+const DESCRIPTION =
+  "Fine Dine serves seasonal American cuisine, tasting menus and private dining on North Washington Avenue in Minneapolis. Reserve a table.";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESCRIPTION },
+      { property: "og:type", content: "restaurant" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      <SiteHeader />
+      <main>
+        <Hero />
+        <About />
+        <SignatureDishes />
+        <MenuPreview />
+        <PrivateDining />
+        <Gallery />
+        <Testimonials />
+        <Reservations />
+        <Contact />
+      </main>
+      <SiteFooter />
+    </>
   );
 }
