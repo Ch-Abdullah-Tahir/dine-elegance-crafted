@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Menu } from "lucide-react";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 
 const LINKS = [
   { label: "Home", href: "#top" },
@@ -64,6 +65,16 @@ export function SiteHeader() {
           <div className="flex items-center justify-end gap-4">
             <a href="#reservations" className="btn-solid !px-6 !py-3">
               Reserve
+            </a>
+            <a
+              href="https://wa.me/15556625111"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-solid !gap-2 !px-6 !py-3"
+            >
+              <WhatsAppIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="sm:hidden">WA</span>
             </a>
             <button
               type="button"
