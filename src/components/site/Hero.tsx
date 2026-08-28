@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 import heroInterior from "@/assets/hero-interior.jpg";
 import heroChef from "@/assets/hero-chef.jpg";
 import heroDish from "@/assets/hero-dish.jpg";
@@ -50,6 +51,15 @@ export function Hero() {
             </a>
             <a href="#menu" className="btn-outline">
               View Menu
+            </a>
+            <a
+              href="https://wa.me/15556625111"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-solid !gap-2.5"
+            >
+              <WhatsAppIcon className="h-3.5 w-3.5" />
+              Reserve on WhatsApp
             </a>
           </div>
         </div>
