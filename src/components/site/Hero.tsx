@@ -5,7 +5,7 @@ import heroDish from "@/assets/hero-dish.jpg";
 import heroDining from "@/assets/hero-dining.jpg";
 
 const SLIDES = [
-  { src: heroInterior, alt: "Candlelit dining room at Fine Dine" },
+  { src: heroInterior, alt: "Candlelit dining room at Dine Cottage" },
   { src: heroChef, alt: "Chef plating a dish in the kitchen" },
   { src: heroDish, alt: "A signature plated course" },
   { src: heroDining, alt: "Guests dining in the evening" },
@@ -40,7 +40,7 @@ export function Hero() {
       <div className="relative flex h-full items-center justify-center px-6">
         <div className="max-w-3xl text-center text-cream">
           <p className="eyebrow">Est. 2011 &middot; Seasonal American</p>
-          <h1 className="mt-6 font-display text-6xl leading-[0.95] sm:text-7xl md:text-8xl">Fine Dine</h1>
+          <h1 className="mt-6 font-display text-6xl leading-[0.95] sm:text-7xl md:text-8xl">Dine Cottage</h1>
           <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-cream/80 sm:text-base">
             Seasonal cuisine crafted with passion.
           </p>

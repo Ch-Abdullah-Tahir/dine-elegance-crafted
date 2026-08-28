@@ -11,9 +11,9 @@ import { Reservations } from "@/components/site/Reservations";
 import { Contact } from "@/components/site/Contact";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
-const TITLE = "Fine Dine — Seasonal Cuisine in Minneapolis";
+const TITLE = "Dine Cottage — Seasonal Cuisine in Minneapolis";
 const DESCRIPTION =
-  "Fine Dine serves seasonal American cuisine, tasting menus and private dining on North Washington Avenue in Minneapolis. Reserve a table.";
+  "Dine Cottage serves seasonal American cuisine, tasting menus and private dining on North Washington Avenue in Minneapolis. Reserve a table.";
 
 export const Route = createFileRoute("/")({
   head: () => ({

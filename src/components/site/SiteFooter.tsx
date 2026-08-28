@@ -16,7 +16,7 @@ export function SiteFooter() {
         <div className="grid gap-14 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
             <a href="#top" className="font-display text-2xl tracking-[0.32em] uppercase">
-              Fine Dine
+              Dine Cottage
             </a>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted-foreground">
               Seasonal cuisine crafted with passion, served in a warm room on North Washington Avenue.
@@ -55,7 +55,7 @@ export function SiteFooter() {
 
         <div className="mt-16 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t border-border pt-8">
           <p className="min-w-0 text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Fine Dine. All rights reserved.
+            &copy; {new Date().getFullYear()} Dine Cottage. All rights reserved.
           </p>
           <div className="flex shrink-0 gap-5 text-xs tracking-[0.18em] text-muted-foreground uppercase">
             <a href="#contact" className="transition-colors hover:text-brass">

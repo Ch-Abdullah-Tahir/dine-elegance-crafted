@@ -23,7 +23,7 @@ export function About() {
           </h2>
           <div className="mt-8 space-y-5 text-sm leading-relaxed text-muted-foreground sm:text-base">
             <p>
-              Fine Dine began with a simple conviction: that a great meal is an act of hospitality
+              Dine Cottage began with a simple conviction: that a great meal is an act of hospitality
               first and a performance second. Our kitchen cooks with what the season gives — produce
               from growers we have known for a decade, fish landed the same morning, bread pulled
               from the oven each afternoon.
