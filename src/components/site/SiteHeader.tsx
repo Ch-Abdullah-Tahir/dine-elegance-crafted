@@ -50,7 +50,7 @@ export function SiteHeader() {
       >
         <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-5 sm:px-8 lg:grid-cols-[1fr_auto_1fr]">
           <a href="#top" className="min-w-0 font-display text-xl tracking-[0.32em] uppercase">
-            Fine Dine
+            Dine Cottage
           </a>
 
           <nav aria-label="Primary" className="hidden justify-center gap-8 lg:flex">
