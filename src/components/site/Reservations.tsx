@@ -9,10 +9,9 @@ const HOURS = [
   { days: "Monday", time: "Closed" },
 ];
 
-const ROOMS = [
-  { name: "Oak Room", capacity: 14 },
-  { name: "Cellar", capacity: 36 },
-];
+const OAK_ROOM = { name: "Oak Room", capacity: 14 };
+const CELLAR = { name: "Cellar", capacity: 36 };
+const ROOMS = [OAK_ROOM, CELLAR];
 
 const MAX_GUESTS = 36;
 
