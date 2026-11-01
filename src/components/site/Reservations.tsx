@@ -28,16 +28,14 @@ function ordinalDate(iso: string): string {
 
 export function Reservations() {
   const [guests, setGuests] = useState(2);
-  const [room, setRoom] = useState(ROOMS[0].name);
+  const [room, setRoom] = useState(OAK_ROOM.name);
   const [sent, setSent] = useState(false);
-
-  const oakCapacity = ROOMS[0].capacity;
 
   function handleGuestsChange(value: number) {
     const clamped = Math.min(Math.max(Number.isNaN(value) ? 1 : value, 1), MAX_GUESTS);
     setGuests(clamped);
     // Oak Room can't hold more than 14 — switch to Cellar automatically.
-    if (clamped > oakCapacity) setRoom(ROOMS[1].name);
+    if (clamped > OAK_ROOM.capacity) setRoom(CELLAR.name);
   }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
