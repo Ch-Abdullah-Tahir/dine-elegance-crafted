@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { submitBooking } from "@/lib/booking.functions";
 import { Reveal } from "./Reveal";
 
 const HOURS = [
@@ -15,21 +17,15 @@ const ROOMS = [OAK_ROOM, CELLAR];
 
 const MAX_GUESTS = 36;
 
-/** "2026-09-29" -> "29th September 2026" (matches the db's captured_fields_json date style) */
-function ordinalDate(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  const day = d.getDate();
-  const suffix =
-    day % 10 === 1 && day !== 11 ? "st" : day % 10 === 2 && day !== 12 ? "nd" : day % 10 === 3 && day !== 13 ? "rd" : "th";
-  const month = d.toLocaleString("en-US", { month: "long" });
-  return `${day}${suffix} ${month} ${d.getFullYear()}`;
-}
+type Status = "idle" | "submitting" | "success" | "error";
 
 export function Reservations() {
   const [guests, setGuests] = useState(2);
   const [room, setRoom] = useState(OAK_ROOM.name);
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const submit = useServerFn(submitBooking);
 
   function handleGuestsChange(value: number) {
     const clamped = Math.min(Math.max(Number.isNaN(value) ? 1 : value, 1), MAX_GUESTS);
@@ -38,26 +34,35 @@ export function Reservations() {
     if (clamped > OAK_ROOM.capacity) setRoom(CELLAR.name);
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const data = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const data = new FormData(form);
 
-    // Exact shape of one row in the booking table — ready to insert once the
-    // db connection is wired:
-    const row = {
-      phone: String(data.get("phone") ?? "").trim(),
-      captured_fields_json: {
+    setStatus("submitting");
+    setErrorMessage("");
+
+    const result = await submit({
+      data: {
         name: String(data.get("name") ?? "").trim(),
-        date: ordinalDate(String(data.get("date") ?? "")),
-        guests: String(guests),
+        phone: String(data.get("phone") ?? "").trim(),
+        contact: String(data.get("contact") ?? "").trim(),
+        guests,
+        date: String(data.get("date") ?? ""),
         room_preference: room,
         event_type: String(data.get("event_type") ?? "").trim(),
-        contact: String(data.get("contact") ?? "").trim(),
       },
-    };
-    void row; // consumed when the db connection is added
+    });
 
-    setSent(true);
+    if (result.ok) {
+      setStatus("success");
+      form.reset();
+      setGuests(2);
+      setRoom(OAK_ROOM.name);
+    } else {
+      setStatus("error");
+      setErrorMessage(result.error);
+    }
   }
 
   return (
@@ -175,13 +180,15 @@ export function Reservations() {
               </div>
             </div>
 
-            <button type="submit" className="btn-solid mt-10 w-full sm:w-auto">
-              Request Reservation
+            <button type="submit" disabled={status === "submitting"} className="btn-solid mt-10 w-full disabled:opacity-60 sm:w-auto">
+              {status === "submitting" ? "Sending…" : "Request Reservation"}
             </button>
             <p aria-live="polite" className="mt-5 text-xs text-muted-foreground">
-              {sent
+              {status === "success"
                 ? "Thank you — your request has been received. We will confirm your evening by phone shortly."
-                : "We will confirm your booking by phone within one business day."}
+                : status === "error"
+                  ? errorMessage
+                  : "We will confirm your booking by phone within one business day."}
             </p>
           </form>
         </Reveal>
