@@ -13,25 +13,48 @@ const HOURS = [
 
 const OAK_ROOM = { name: "Oak Room", capacity: 14 };
 const CELLAR = { name: "Cellar", capacity: 36 };
-const ROOMS = [OAK_ROOM, CELLAR];
+const PRIVATE_ROOMS = [OAK_ROOM, CELLAR];
+const MAIN_HALL = "Main Hall";
 
-const MAX_GUESTS = 36;
+const PACKAGES = [
+  "Family Feast — $55 per guest",
+  "Celebration Supper — $85 per guest",
+  "Seasonal Tasting — $145 per guest",
+  "À la carte — order at the table",
+];
 
+const MAX_GUESTS = 99;
+
+type BookingType = "Private Dining" | "Main Hall";
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function Reservations() {
   const [guests, setGuests] = useState(2);
+  const [bookingType, setBookingType] = useState<BookingType>("Private Dining");
   const [room, setRoom] = useState(OAK_ROOM.name);
+  const [pkg, setPkg] = useState(PACKAGES[0]);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   const submit = useServerFn(submitBooking);
 
+  const venue = bookingType === "Private Dining" ? room : MAIN_HALL;
+
   function handleGuestsChange(value: number) {
     const clamped = Math.min(Math.max(Number.isNaN(value) ? 1 : value, 1), MAX_GUESTS);
     setGuests(clamped);
-    // Oak Room can't hold more than 14 — switch to Cellar automatically.
-    if (clamped > OAK_ROOM.capacity) setRoom(CELLAR.name);
+    if (clamped > CELLAR.capacity && bookingType === "Private Dining") {
+      setBookingType("Main Hall");
+      setPkg(PACKAGES[PACKAGES.length - 1]);
+    } else if (clamped > OAK_ROOM.capacity) {
+      setRoom(CELLAR.name);
+    }
+  }
+
+  function handleBookingTypeChange(next: BookingType) {
+    setBookingType(next);
+    if (next === "Main Hall") setPkg(PACKAGES[PACKAGES.length - 1]);
+    else setPkg(PACKAGES[0]);
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -49,8 +72,10 @@ export function Reservations() {
         contact: String(data.get("contact") ?? "").trim(),
         guests,
         date: String(data.get("date") ?? ""),
-        room_preference: room,
+        room_preference: venue,
+        booking_type: bookingType,
         event_type: String(data.get("event_type") ?? "").trim(),
+        menu_package: pkg,
       },
     });
 
@@ -58,7 +83,9 @@ export function Reservations() {
       setStatus("success");
       form.reset();
       setGuests(2);
+      setBookingType("Private Dining");
       setRoom(OAK_ROOM.name);
+      setPkg(PACKAGES[0]);
     } else {
       setStatus("error");
       setErrorMessage(result.error);
@@ -72,8 +99,8 @@ export function Reservations() {
           <p className="eyebrow">Reservations</p>
           <h2 className="mt-6 font-display text-4xl leading-tight sm:text-5xl">Join us for dinner</h2>
           <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
-            The Oak Room seats up to 14 guests and the Cellar up to 36 — ideal for family dinners and
-            private celebrations. Tables are released thirty days in advance.
+            Book the Oak Room (up to 14), the Cellar (up to 36), or a table in the Main Hall. One
+            form for every kind of evening — private or open dining.
           </p>
 
           <dl className="mt-10 space-y-3 border-t border-border pt-8 text-sm">
@@ -102,7 +129,26 @@ export function Reservations() {
 
         <Reveal delay={120}>
           <form className="border border-border bg-card p-8 sm:p-12" onSubmit={handleSubmit}>
-            <div className="grid gap-8 sm:grid-cols-2">
+            <fieldset>
+              <legend className="eyebrow">Booking type</legend>
+              <div className="mt-3 grid grid-cols-2 border border-border">
+                {(["Private Dining", "Main Hall"] as BookingType[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={bookingType === t}
+                    onClick={() => handleBookingTypeChange(t)}
+                    className={`px-4 py-3 text-[0.6875rem] tracking-[0.16em] uppercase transition-colors ${
+                      bookingType === t ? "bg-ink text-cream" : "text-ink hover:text-brass"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <div className="mt-8 grid gap-8 sm:grid-cols-2">
               <div>
                 <label htmlFor="name" className="eyebrow">
                   Name
@@ -146,20 +192,45 @@ export function Reservations() {
                 </label>
                 <input id="date" name="date" type="date" required className="field mt-3" />
               </div>
+              {bookingType === "Private Dining" ? (
+                <div className="sm:col-span-2">
+                  <label htmlFor="room" className="eyebrow">
+                    Room preference
+                  </label>
+                  <select
+                    id="room"
+                    name="room"
+                    value={room}
+                    onChange={(e) => setRoom(e.target.value)}
+                    className="field mt-3"
+                  >
+                    {PRIVATE_ROOMS.map((r) => (
+                      <option key={r.name} value={r.name} disabled={guests > r.capacity}>
+                        {r.name} — up to {r.capacity} guests
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="sm:col-span-2">
+                  <p className="eyebrow">Seating</p>
+                  <p className="mt-3 text-sm text-muted-foreground">Main Hall — open dining</p>
+                </div>
+              )}
               <div className="sm:col-span-2">
-                <label htmlFor="room" className="eyebrow">
-                  Room preference
+                <label htmlFor="menu_package" className="eyebrow">
+                  Menu
                 </label>
                 <select
-                  id="room"
-                  name="room"
-                  value={room}
-                  onChange={(e) => setRoom(e.target.value)}
+                  id="menu_package"
+                  name="menu_package"
+                  value={pkg}
+                  onChange={(e) => setPkg(e.target.value)}
                   className="field mt-3"
                 >
-                  {ROOMS.map((r) => (
-                    <option key={r.name} value={r.name} disabled={guests > r.capacity}>
-                      {r.name} — up to {r.capacity} guests
+                  {PACKAGES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
                     </option>
                   ))}
                 </select>
