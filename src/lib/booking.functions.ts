@@ -25,10 +25,12 @@ const bookingSchema = z.object({
   name: z.string().trim().min(1).max(100),
   phone: z.string().trim().min(3).max(30),
   contact: z.string().trim().max(120).optional().default(""),
-  guests: z.coerce.number().int().min(1).max(36),
+  guests: z.coerce.number().int().min(1).max(99),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-  room_preference: z.enum(["Oak Room", "Cellar"]),
+  room_preference: z.enum(["Oak Room", "Cellar", "Main Hall"]),
+  booking_type: z.enum(["Private Dining", "Main Hall"]),
   event_type: z.string().trim().min(1).max(80),
+  menu_package: z.string().trim().min(1).max(80),
 });
 
 export const submitBooking = createServerFn({ method: "POST" })
@@ -43,7 +45,9 @@ export const submitBooking = createServerFn({ method: "POST" })
         date: ordinalDate(data.date),
         guests: String(data.guests),
         room_preference: data.room_preference,
+        booking_type: data.booking_type,
         event_type: data.event_type,
+        menu_package: data.menu_package,
         contact: data.contact,
       },
     };
