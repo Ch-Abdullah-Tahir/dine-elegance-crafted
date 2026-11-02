@@ -16,9 +16,18 @@ export function SiteHeader() {
   const [announcement, setAnnouncement] = useState(true);
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState("top");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 24);
+      let current = "top";
+      for (const l of LINKS) {
+        const el = document.getElementById(l.href.slice(1));
+        if (el && el.getBoundingClientRect().top <= 140) current = l.href.slice(1);
+      }
+      setActive(current);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -45,8 +54,8 @@ export function SiteHeader() {
       )}
 
       <header
-        className={`border-b transition-colors duration-500 ${
-          scrolled ? "border-border bg-background/95 backdrop-blur-sm" : "border-transparent bg-background"
+        className={`border-b bg-header transition-colors duration-500 ${
+          scrolled ? "border-border shadow-[0_1px_12px_rgba(36,34,32,0.06)]" : "border-border"
         }`}
       >
         <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-5 sm:px-8 lg:grid-cols-[1fr_auto_1fr]">
@@ -54,9 +63,13 @@ export function SiteHeader() {
             Dine Cottage
           </a>
 
-          <nav aria-label="Primary" className="hidden justify-center gap-8 lg:flex">
+          <nav aria-label="Primary" className="hidden justify-center gap-2 lg:flex">
             {LINKS.map((l) => (
-              <a key={l.label} href={l.href} className="nav-link">
+              <a
+                key={l.label}
+                href={l.href}
+                className={`nav-link px-3 py-1.5 ${active === l.href.slice(1) ? "nav-link-active" : ""}`}
+              >
                 {l.label}
               </a>
             ))}
