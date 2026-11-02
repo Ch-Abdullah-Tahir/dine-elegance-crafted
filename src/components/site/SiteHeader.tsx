@@ -109,7 +109,7 @@ export function SiteHeader() {
                   <a
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="nav-link block border-b border-border py-4"
+                    className={`nav-link block border-b border-border py-4 ${active === l.href.slice(1) ? "text-brass" : ""}`}
                   >
                     {l.label}
                   </a>
