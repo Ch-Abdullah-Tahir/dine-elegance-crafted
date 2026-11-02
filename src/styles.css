@@ -38,6 +38,7 @@
   --color-ink: var(--ink);
   --color-cream: var(--cream);
   --color-brass: var(--brass);
+  --color-header: var(--header-surface);
 }
 
 :root {
@@ -67,6 +68,8 @@
   --border: oklch(0.87 0.012 82);
   --input: oklch(0.87 0.012 82);
   --ring: oklch(0.652 0.073 72);
+  /* navbar surface: a touch lighter than the page cream */
+  --header-surface: oklch(0.979 0.005 88);
 }
 
 @layer base {
@@ -120,6 +123,11 @@
   &:hover {
     color: var(--brass);
   }
+}
+
+@utility nav-link-active {
+  background: var(--secondary);
+  color: var(--brass);
 }
 
 @utility btn-solid {
