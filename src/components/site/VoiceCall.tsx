@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
 import { AudioLines, Clock, Mic, MicOff, Phone, PhoneOff, Volume2 } from "lucide-react";
 import {
@@ -10,9 +10,28 @@ import {
 } from "@/components/ui/dialog";
 import { createLiveKitCallToken } from "@/lib/livekit-token.functions";
 import { VoiceSpectrum } from "./VoiceSpectrum";
+import { useOnline } from "@/hooks/use-online";
 
 type Phase = "ready" | "connecting" | "microphone" | "live" | "ended";
-type Session = { room: Room; context: AudioContext | null; startedAt: number | null };
+type Session = {
+  room: Room;
+  context: AudioContext | null;
+  startedAt: number | null;
+  controller: AbortController;
+};
+
+const callTimeouts = {
+  connecting: [
+    30_000,
+    "Couldn’t connect to the call. Check your internet connection and try again.",
+  ],
+  microphone: [45_000, "Microphone access timed out. Allow your microphone and try again."],
+  agent: [30_000, "Sage didn’t join in time. Try calling again or use the reservation form."],
+  reconnecting: [
+    20_000,
+    "The connection was lost and the call ended. You can call again once you’re online.",
+  ],
+} as const;
 
 function elapsedSeconds(startedAt: number) {
   return Math.floor((performance.now() - startedAt) / 1000);
@@ -25,6 +44,7 @@ function formatDuration(seconds: number) {
 
 function release(session: Session | null) {
   if (!session) return;
+  session.controller.abort();
   void session.room.disconnect();
   if (session.context && session.context.state !== "closed") void session.context.close();
 }
@@ -62,6 +82,7 @@ function CallPanel() {
   const [reconnecting, setReconnecting] = useState(false);
   const [error, setError] = useState("");
   const [duration, setDuration] = useState<number | null>(null);
+  const online = useOnline();
 
   // Once both sides join, keep counting through silence, mute, and reconnection.
   const timingCall = phase === "live" && (remote !== null || duration !== null);
@@ -92,7 +113,7 @@ function CallPanel() {
     };
   }, [remote]);
 
-  function endCall() {
+  const endCall = useCallback((message = "") => {
     const session = sessionRef.current;
     if (session && session.startedAt !== null) setDuration(elapsedSeconds(session.startedAt));
     sessionRef.current = null;
@@ -104,12 +125,34 @@ function CallPanel() {
     setChangingMic(false);
     setNeedsSound(false);
     setReconnecting(false);
-    setError("");
+    setError(message);
     setPhase("ended");
-  }
+  }, []);
+
+  const interrupted = reconnecting || !online;
+  const waitingFor =
+    phase === "ready" || phase === "ended"
+      ? null
+      : interrupted
+        ? "reconnecting"
+        : phase === "live"
+          ? remote
+            ? null
+            : "agent"
+          : phase;
+
+  useEffect(() => {
+    const session = sessionRef.current;
+    if (!session || !waitingFor) return;
+    const [delay, message] = callTimeouts[waitingFor];
+    const timer = window.setTimeout(() => {
+      if (sessionRef.current === session) endCall(message);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [waitingFor, endCall]);
 
   async function startCall() {
-    if (sessionRef.current) return;
+    if (sessionRef.current || !navigator.onLine) return;
     setDuration(null);
     setError("");
     setPhase("connecting");
@@ -130,7 +173,12 @@ function CallPanel() {
     } catch {
       // Voice calls can still work on a browser without Web Audio meters.
     }
-    const session: Session = { room, context: audioContext, startedAt: null };
+    const session: Session = {
+      room,
+      context: audioContext,
+      startedAt: null,
+      controller: new AbortController(),
+    };
     sessionRef.current = session;
     setContext(audioContext);
     const isCurrent = () => sessionRef.current === session;
@@ -144,19 +192,27 @@ function CallPanel() {
     room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
       if (isCurrent()) setNeedsSound(!room.canPlaybackAudio);
     });
-    room.on(RoomEvent.Reconnecting, () => {
+    const reconnect = () => {
       if (isCurrent()) setReconnecting(true);
-    });
+    };
+    room.on(RoomEvent.Reconnecting, reconnect);
+    room.on(RoomEvent.SignalReconnecting, reconnect);
     room.on(RoomEvent.Reconnected, () => {
       if (isCurrent()) setReconnecting(false);
     });
     try {
-      const { serverUrl, participantToken } = await createLiveKitCallToken();
+      const { serverUrl, participantToken } = await createLiveKitCallToken({
+        signal: session.controller.signal,
+      });
       if (!isCurrent()) return;
       await room.connect(serverUrl, participantToken);
-      if (!isCurrent()) return;
+      if (!isCurrent()) {
+        void room.disconnect();
+        return;
+      }
       room.on(RoomEvent.Disconnected, () => {
-        if (isCurrent()) endCall();
+        if (isCurrent())
+          endCall("The call disconnected. You can start a new call when you’re online.");
       });
       setPhase("microphone");
       const publication = await room.localParticipant.setMicrophoneEnabled(true);
@@ -170,11 +226,10 @@ function CallPanel() {
       setPhase("live");
     } catch (cause) {
       if (!isCurrent()) return;
-      endCall();
       if (cause instanceof Error && cause.name === "NotAllowedError") {
-        setError("Allow microphone access in your browser, then start the call again.");
+        endCall("Allow microphone access in your browser, then start the call again.");
       } else {
-        setError(cause instanceof Error ? cause.message : "Couldn’t connect. Please try again.");
+        endCall("Couldn’t start the call. Check your connection and microphone, then try again.");
       }
     }
   }
@@ -227,12 +282,18 @@ function CallPanel() {
             <span
               aria-hidden="true"
               className={
-                phase === "live" && !reconnecting
+                phase === "live" && remote && !interrupted
                   ? "size-2 rounded-full bg-[#517656]"
                   : "size-2 rounded-full border border-current"
               }
             />
-            {reconnecting ? "Reconnecting…" : status}
+            {!online
+              ? sessionRef.current
+                ? "Internet connection lost. Waiting to reconnect…"
+                : "You’re offline"
+              : reconnecting
+                ? "Reconnecting…"
+                : status}
           </span>
           {duration !== null && (
             <span
@@ -289,7 +350,7 @@ function CallPanel() {
           </button>
           <button
             type="button"
-            onClick={endCall}
+            onClick={() => endCall()}
             className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#84483b] text-sm font-medium text-white hover:bg-[#71392f]"
           >
             <PhoneOff size={16} aria-hidden="true" /> End call
@@ -299,7 +360,8 @@ function CallPanel() {
         <div>
           <button
             type="button"
-            onClick={pending ? endCall : startCall}
+            onClick={pending ? () => endCall() : startCall}
+            disabled={!pending && !online}
             className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#304a40] text-sm font-medium text-[#faf4e8] hover:bg-[#243c32]"
           >
             {pending ? (
@@ -307,7 +369,7 @@ function CallPanel() {
             ) : (
               <Phone size={16} aria-hidden="true" />
             )}
-            {pending ? "Cancel call" : "Start voice call"}
+            {pending ? "Cancel call" : phase === "ended" ? "Call again" : "Start voice call"}
           </button>
           {!pending && (
             <p className="mt-2.5 text-center text-xs text-[#525b50]">

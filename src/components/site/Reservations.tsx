@@ -1,8 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { submitBooking } from "@/lib/booking.functions";
 import { reservationTimeError, restaurantToday } from "@/lib/reservation-hours";
+import {
+  OAK_ROOM_CAPACITY,
+  CELLAR_CAPACITY,
+  privateCapacityMessage,
+  reservationRoom,
+  type BookingType,
+  type RoomPreference,
+} from "@/lib/reservation-rooms";
+import { useOnline } from "@/hooks/use-online";
 import { Reveal } from "./Reveal";
 
 const HOURS = [
@@ -14,10 +23,7 @@ const HOURS = [
 
 const OAK_ROOM = "Oak Room";
 const CELLAR = "Cellar";
-const OAK_ROOM_CAPACITY = 16;
-const CELLAR_CAPACITY = 32;
 const PRIVATE_ROOMS = [OAK_ROOM, CELLAR];
-const MAIN_HALL = "Main Hall";
 
 const PRIVATE_PACKAGES = [
   "Family Feast — $55 per guest",
@@ -26,30 +32,24 @@ const PRIVATE_PACKAGES = [
 ];
 const MAIN_HALL_MENU = "À la carte — order at the table";
 
-type BookingType = "Private Dining" | "Main Hall";
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function Reservations() {
   const [guests, setGuests] = useState(2);
   const [bookingType, setBookingType] = useState<BookingType>("Private Dining");
-  const [room, setRoom] = useState(OAK_ROOM);
+  const [room, setRoom] = useState<RoomPreference>(OAK_ROOM);
   const [pkg, setPkg] = useState(PRIVATE_PACKAGES[0]);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const online = useOnline();
+  const sending = useRef(false);
 
   const submit = useServerFn(submitBooking);
 
-  const venue = bookingType === "Private Dining" ? room : MAIN_HALL;
+  const venue = reservationRoom(bookingType, guests, room);
 
   function handleGuestsChange(value: number) {
     const nextGuests = Number.isFinite(value) ? Math.max(value, 1) : 1;
-    if (bookingType === "Private Dining") {
-      if (guests <= OAK_ROOM_CAPACITY && nextGuests > OAK_ROOM_CAPACITY) {
-        setRoom(CELLAR);
-      } else if (guests > OAK_ROOM_CAPACITY && nextGuests <= OAK_ROOM_CAPACITY) {
-        setRoom(OAK_ROOM);
-      }
-    }
     setGuests(nextGuests);
   }
 
@@ -61,10 +61,11 @@ export function Reservations() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    if (sending.current || !navigator.onLine) return;
 
-    if (bookingType === "Private Dining" && guests > CELLAR_CAPACITY) {
+    if (!venue) {
       setStatus("error");
-      setErrorMessage(`Private dining can accommodate up to ${CELLAR_CAPACITY} guests in the Cellar.`);
+      setErrorMessage(privateCapacityMessage);
       return;
     }
 
@@ -81,34 +82,50 @@ export function Reservations() {
 
     setStatus("submitting");
     setErrorMessage("");
+    sending.current = true;
+    const controller = new AbortController();
+    const stopWaiting = () => controller.abort();
+    const timeout = window.setTimeout(stopWaiting, 20_000);
+    window.addEventListener("offline", stopWaiting);
+    try {
+      const result = await submit({
+        signal: controller.signal,
+        data: {
+          name: String(data.get("name") ?? "").trim(),
+          phone: String(data.get("phone") ?? "").trim(),
+          contact: String(data.get("contact") ?? "").trim(),
+          guests,
+          date,
+          reservation_time: reservationTime,
+          room_preference: venue,
+          booking_type: bookingType,
+          event_type: String(data.get("event_type") ?? "").trim(),
+          menu_package: pkg,
+          allergies: String(data.get("allergies") ?? "").trim(),
+          special_instructions: String(data.get("special_instructions") ?? "").trim(),
+        },
+      });
 
-    const result = await submit({
-      data: {
-        name: String(data.get("name") ?? "").trim(),
-        phone: String(data.get("phone") ?? "").trim(),
-        contact: String(data.get("contact") ?? "").trim(),
-        guests,
-        date,
-        reservation_time: reservationTime,
-        room_preference: venue,
-        booking_type: bookingType,
-        event_type: String(data.get("event_type") ?? "").trim(),
-        menu_package: pkg,
-        allergies: String(data.get("allergies") ?? "").trim(),
-        special_instructions: String(data.get("special_instructions") ?? "").trim(),
-      },
-    });
-
-    if (result.ok) {
-      setStatus("success");
-      form.reset();
-      setGuests(2);
-      setBookingType("Private Dining");
-      setRoom(OAK_ROOM);
-      setPkg(PRIVATE_PACKAGES[0]);
-    } else {
+      if (result.ok) {
+        setStatus("success");
+        form.reset();
+        setGuests(2);
+        setBookingType("Private Dining");
+        setRoom(OAK_ROOM);
+        setPkg(PRIVATE_PACKAGES[0]);
+      } else {
+        setStatus("error");
+        setErrorMessage(result.error);
+      }
+    } catch {
       setStatus("error");
-      setErrorMessage(result.error);
+      setErrorMessage(
+        "We couldn't verify whether your request was received. Please check with the restaurant before submitting again.",
+      );
+    } finally {
+      window.clearTimeout(timeout);
+      window.removeEventListener("offline", stopWaiting);
+      sending.current = false;
     }
   }
 
@@ -117,7 +134,9 @@ export function Reservations() {
       <div className="grid gap-16 md:grid-cols-[0.85fr_1.15fr] md:gap-24">
         <Reveal>
           <p className="eyebrow">Reservations</p>
-          <h2 className="mt-6 font-display text-4xl leading-tight sm:text-5xl">Join us for dinner</h2>
+          <h2 className="mt-6 font-display text-4xl leading-tight sm:text-5xl">
+            Join us for dinner
+          </h2>
           <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
             Choose private dining in the Oak Room or Cellar, or reserve a table in the Main Hall.
             Tell us your group size and preferred time; we will confirm your request by phone.
@@ -173,13 +192,27 @@ export function Reservations() {
                 <label htmlFor="name" className="eyebrow">
                   Name
                 </label>
-                <input id="name" name="name" type="text" required maxLength={100} className="field mt-3" />
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  maxLength={100}
+                  className="field mt-3"
+                />
               </div>
               <div>
                 <label htmlFor="phone" className="eyebrow">
                   Phone
                 </label>
-                <input id="phone" name="phone" type="tel" required maxLength={30} className="field mt-3" />
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  maxLength={30}
+                  className="field mt-3"
+                />
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="contact" className="eyebrow">
@@ -188,7 +221,13 @@ export function Reservations() {
                 <p className="mt-2 text-xs text-muted-foreground">
                   A second number or an email we can reach you on.
                 </p>
-                <input id="contact" name="contact" type="text" maxLength={120} className="field mt-3" />
+                <input
+                  id="contact"
+                  name="contact"
+                  type="text"
+                  maxLength={120}
+                  className="field mt-3"
+                />
               </div>
               <div>
                 <label htmlFor="guests" className="eyebrow">
@@ -241,22 +280,29 @@ export function Reservations() {
                   <select
                     id="room"
                     name="room"
-                    value={room}
-                    onChange={(e) => setRoom(e.target.value)}
+                    value={venue ?? ""}
+                    onChange={(e) => setRoom(e.target.value === CELLAR ? CELLAR : OAK_ROOM)}
+                    disabled={!venue}
                     className="field mt-3"
                   >
+                    {!venue && <option value="">No private room fits this group</option>}
                     {PRIVATE_ROOMS.map((name) => (
-                      <option key={name} value={name} disabled={name === OAK_ROOM && guests > OAK_ROOM_CAPACITY}>
-                        {name} — up to {name === OAK_ROOM ? OAK_ROOM_CAPACITY : CELLAR_CAPACITY} guests
+                      <option
+                        key={name}
+                        value={name}
+                        disabled={name === OAK_ROOM && guests > OAK_ROOM_CAPACITY}
+                      >
+                        {name} — up to {name === OAK_ROOM ? OAK_ROOM_CAPACITY : CELLAR_CAPACITY}{" "}
+                        guests
                       </option>
                     ))}
                   </select>
                   <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
                     {guests > CELLAR_CAPACITY
-                      ? `Private rooms hold up to ${CELLAR_CAPACITY} guests. Choose Main Hall or reduce your group size.`
+                      ? privateCapacityMessage
                       : guests > OAK_ROOM_CAPACITY
-                      ? `For ${guests} guests, the Cellar is selected automatically (up to ${CELLAR_CAPACITY} guests).`
-                      : `Oak Room: up to ${OAK_ROOM_CAPACITY} guests · Cellar: up to ${CELLAR_CAPACITY} guests.`}
+                        ? `For ${guests} guests, the Cellar is selected automatically (up to ${CELLAR_CAPACITY} guests).`
+                        : `Oak Room: up to ${OAK_ROOM_CAPACITY} guests · Cellar: up to ${CELLAR_CAPACITY} guests.`}
                   </p>
                 </div>
               ) : (
@@ -330,9 +376,18 @@ export function Reservations() {
               </div>
             </div>
 
-            <button type="submit" disabled={status === "submitting"} className="btn-solid mt-10 w-full disabled:opacity-60 sm:w-auto">
+            <button
+              type="submit"
+              disabled={!online || status === "submitting"}
+              className="btn-solid mt-10 w-full disabled:opacity-60 sm:w-auto"
+            >
               {status === "submitting" ? "Sending…" : "Request Reservation"}
             </button>
+            {!online && (
+              <p role="status" className="mt-3 text-sm">
+                You’re offline. Keep this page open to keep your details.
+              </p>
+            )}
             <p aria-live="polite" className="mt-5 text-xs text-muted-foreground">
               {status === "success"
                 ? "Thank you — your request has been received. We will confirm it by phone within one business day."
