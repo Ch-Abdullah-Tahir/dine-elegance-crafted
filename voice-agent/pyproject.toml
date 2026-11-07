@@ -1,0 +1,11 @@
+[project]
+name = "dine-cottage-voice-agent"
+version = "0.1.0"
+description = "LiveKit voice agent for Dine Cottage"
+requires-python = ">=3.10"
+dependencies = [
+  "livekit-agents[openai]~=1.8",
+  "aiohttp>=3.10,<4",
+  "python-dotenv>=1.0,<2",
+  "tzdata>=2024.1",
+]

@@ -8,22 +8,22 @@ const ROOMS = [
     src: oakRoom,
     tag: "Private",
     name: "Oak Room",
-    capacity: "Seats up to 14",
-    desc: "A candlelit room with a long oak table, dedicated captain, and a menu written with our chef for your evening.",
+    detail: "Candlelit dining",
+    desc: "A candlelit room with a long oak table. Your evening includes a dedicated captain, a menu planned with our chef, and wine selected with our sommelier.",
   },
   {
     src: cellar,
     tag: "Private",
     name: "Cellar",
-    capacity: "Seats up to 36",
-    desc: "Our stone-vaulted cellar for larger gatherings — rehearsal dinners, board evenings, and anniversaries worth the trouble.",
+    detail: "Stone-vaulted room",
+    desc: "A private room for family gatherings and celebrations, with a dedicated captain, a menu planned with our chef, and wine selected with our sommelier.",
   },
   {
     src: mainHall,
     tag: "Open dining",
     name: "Main Hall",
-    capacity: "Open seating",
-    desc: "The warm heart of the house — walk-in tables at the bar, window seats, and long unhurried suppers every night.",
+    detail: "Open dining",
+    desc: "Our main dining room offers bar and window seating with à la carte service. The bar is reserved for walk-in guests.",
   },
 ];
 
@@ -36,8 +36,8 @@ export function Rooms() {
           Choose where your evening lives
         </h2>
         <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-          Two private rooms and an open hall. Each is booked through the same reservation form —
-          simply tell us which one, and how many are coming.
+          Choose a private room or open dining in the Main Hall. Use the reservation form to tell us
+          your preference and group size.
         </p>
       </Reveal>
 
@@ -61,7 +61,7 @@ export function Rooms() {
               <div className="mt-6 flex items-baseline justify-between gap-4">
                 <h3 className="font-display text-2xl">{room.name}</h3>
                 <span className="shrink-0 text-xs tracking-[0.14em] text-brass uppercase">
-                  {room.capacity}
+                  {room.detail}
                 </span>
               </div>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{room.desc}</p>

@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { Hero } from "@/components/site/Hero";
 import { About } from "@/components/site/About";
-import { SignatureDishes } from "@/components/site/SignatureDishes";
 import { MenuPreview } from "@/components/site/MenuPreview";
 import { PrivateDining } from "@/components/site/PrivateDining";
 import { Gallery } from "@/components/site/Gallery";
@@ -10,6 +9,7 @@ import { Testimonials } from "@/components/site/Testimonials";
 import { Reservations } from "@/components/site/Reservations";
 import { Contact } from "@/components/site/Contact";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { VoiceCall } from "@/components/site/VoiceCall";
 
 const TITLE = "Dine Cottage — Seasonal Cuisine in Minneapolis";
 const DESCRIPTION =
@@ -33,10 +33,10 @@ function Index() {
   return (
     <>
       <SiteHeader />
+      <VoiceCall />
       <main>
         <Hero />
         <About />
-        <SignatureDishes />
         <MenuPreview />
         <PrivateDining />
         <Gallery />

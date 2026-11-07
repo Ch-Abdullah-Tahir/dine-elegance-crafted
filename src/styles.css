@@ -6,7 +6,7 @@
 
 /*
  * FINE DINE — editorial fine-dining design system.
- * Cream background, charcoal ink, muted brass accent.
+ * Warm stone background, softened walnut ink, quiet brass accent.
  */
 
 @theme inline {
@@ -43,33 +43,33 @@
 
 :root {
   --radius: 0.125rem;
-  /* cream #F6F3EE */
-  --background: oklch(0.963 0.008 85);
-  --cream: oklch(0.963 0.008 85);
-  /* charcoal #242220 */
-  --foreground: oklch(0.235 0.005 70);
-  --ink: oklch(0.235 0.005 70);
-  /* brass #B08D57 */
-  --brass: oklch(0.652 0.073 72);
-  --card: oklch(0.982 0.006 85);
-  --card-foreground: oklch(0.235 0.005 70);
-  --popover: oklch(0.982 0.006 85);
-  --popover-foreground: oklch(0.235 0.005 70);
-  --primary: oklch(0.235 0.005 70);
-  --primary-foreground: oklch(0.963 0.008 85);
-  --secondary: oklch(0.93 0.01 85);
-  --secondary-foreground: oklch(0.235 0.005 70);
-  --muted: oklch(0.93 0.01 85);
-  --muted-foreground: oklch(0.52 0.008 75);
-  --accent: oklch(0.652 0.073 72);
-  --accent-foreground: oklch(0.982 0.006 85);
+  /* Soft warm stone replaces the brighter cream page surface. */
+  --background: oklch(0.94 0.014 80);
+  --cream: oklch(0.94 0.014 80);
+  /* Walnut ink keeps text clear without the stark black-on-white feel. */
+  --foreground: oklch(0.3 0.012 60);
+  --ink: oklch(0.3 0.012 60);
+  /* A darker, quieter brass stays readable on the warmer surfaces. */
+  --brass: oklch(0.56 0.06 72);
+  --card: oklch(0.96 0.012 82);
+  --card-foreground: oklch(0.3 0.012 60);
+  --popover: oklch(0.96 0.012 82);
+  --popover-foreground: oklch(0.3 0.012 60);
+  --primary: oklch(0.3 0.012 60);
+  --primary-foreground: oklch(0.94 0.014 80);
+  --secondary: oklch(0.91 0.016 80);
+  --secondary-foreground: oklch(0.3 0.012 60);
+  --muted: oklch(0.91 0.016 80);
+  --muted-foreground: oklch(0.47 0.012 68);
+  --accent: oklch(0.56 0.06 72);
+  --accent-foreground: oklch(0.96 0.012 82);
   --destructive: oklch(0.51 0.16 27);
-  --destructive-foreground: oklch(0.982 0.006 85);
-  --border: oklch(0.87 0.012 82);
-  --input: oklch(0.87 0.012 82);
-  --ring: oklch(0.652 0.073 72);
-  /* navbar surface: a touch lighter than the page cream */
-  --header-surface: oklch(0.979 0.005 88);
+  --destructive-foreground: oklch(0.96 0.012 82);
+  --border: oklch(0.84 0.014 78);
+  --input: oklch(0.84 0.014 78);
+  --ring: oklch(0.56 0.06 72);
+  /* Keep the navigation close to the page tone instead of near-white. */
+  --header-surface: oklch(0.95 0.012 82);
 }
 
 @layer base {

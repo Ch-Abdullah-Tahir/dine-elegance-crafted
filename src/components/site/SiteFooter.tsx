@@ -39,7 +39,7 @@ export function SiteFooter() {
           <div>
             <h2 className="eyebrow">Newsletter</h2>
             <p className="mt-6 text-sm text-muted-foreground">
-              Seasonal menus and private event dates, once a month.
+              Restaurant news and private event dates, once a month.
             </p>
             <form className="mt-6 flex gap-3" onSubmit={(e) => e.preventDefault()}>
               <label htmlFor="newsletter" className="sr-only">

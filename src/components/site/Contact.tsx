@@ -23,8 +23,8 @@ export function Contact() {
               </p>
             </div>
             <p className="mt-8 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Valet is available from 5:00 pm at the Washington Avenue entrance. The bar seats
-              fourteen and is kept for walk-ins each evening.
+              Valet is available from 5:00 pm at the Washington Avenue entrance. The Main Hall
+              offers open dining and à la carte service; the bar is kept for walk-in guests.
             </p>
             <div className="mt-10 flex gap-5">
               {[

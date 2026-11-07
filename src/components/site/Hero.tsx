@@ -36,7 +36,7 @@ export function Hero() {
           }`}
         />
       ))}
-      <div className="absolute inset-0 bg-ink/55" />
+      <div className="absolute inset-0 bg-ink/60" />
 
       <div className="relative flex h-full items-center justify-center px-6">
         <div className="max-w-3xl text-center text-cream">

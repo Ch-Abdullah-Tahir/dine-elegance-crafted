@@ -39,7 +39,7 @@ export function SiteHeader() {
         <div className="relative bg-ink text-cream">
           <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 py-2.5 sm:px-8">
             <p className="min-w-0 truncate text-center text-[0.65rem] tracking-[0.22em] uppercase sm:text-[0.7rem]">
-              Summer Tasting Menu Now Available
+              Seasonal American Dining · Private Rooms · Main Hall
             </p>
             <button
               type="button"

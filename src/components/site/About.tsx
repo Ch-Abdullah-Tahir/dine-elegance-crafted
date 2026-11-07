@@ -23,15 +23,14 @@ export function About() {
           </h2>
           <div className="mt-8 space-y-5 text-sm leading-relaxed text-muted-foreground sm:text-base">
             <p>
-              Dine Cottage began with a simple conviction: that a great meal is an act of hospitality
-              first and a performance second. Our kitchen cooks with what the season gives — produce
-              from growers we have known for a decade, fish landed the same morning, bread pulled
-              from the oven each afternoon.
+              Dine Cottage serves Seasonal American food with a simple idea: a great meal is an act
+              of hospitality first. Our menu includes oysters, steak tartare, roast guinea hen,
+              line-caught halibut, and house desserts.
             </p>
             <p>
-              The dining room is warm and unhurried. Brass, linen, oak. Nothing that asks for
-              attention, everything that rewards it. Come for a Tuesday supper at the bar or a
-              tasting menu that unfolds across four hours.
+              The dining room is warm and unhurried, with brass, linen, and oak. Choose a private
+              evening in the Oak Room or Cellar, or open dining in the Main Hall. The menu stays
+              consistent, with set packages for private events and à la carte dining in the hall.
             </p>
           </div>
           <a href="#gallery" className="btn-solid mt-10">
