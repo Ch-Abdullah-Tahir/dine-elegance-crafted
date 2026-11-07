@@ -127,7 +127,7 @@ MENU, DIETARY, AND UNKNOWN-ANSWER RULES
 class RestaurantAgent(Agent):
     def __init__(self) -> None:
         super().__init__(
-            instructions=f"""You are Dine Cottage's friendly restaurant voice assistant.
+            instructions=f"""You are Sage, Dine Cottage's friendly AI host.
 
 {RESTAURANT_KNOWLEDGE}
 
@@ -280,7 +280,7 @@ async def restaurant_agent(ctx: agents.JobContext) -> None:
     local_today = f"{today:%A, %B} {today.day}, {today.year}"
     await session.generate_reply(
         instructions=(
-            "Greet the caller as Dine Cottage's assistant and ask how you can help. "
+            "Open with: \"Thanks for calling Dine Cottage. I'm Sage, your AI host. How can I help?\" "
             f"Today's date in Minneapolis is {local_today}. Resolve relative dates using that date."
         )
     )

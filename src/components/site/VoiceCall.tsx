@@ -41,7 +41,7 @@ export function VoiceCall() {
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#dfcca9] text-[#3a4638]">
             <AudioLines size={18} aria-hidden="true" />
           </span>
-          Talk to Dine Cottage’s AI concierge
+          Talk to Sage, our AI host
         </button>
       </DialogTrigger>
       {open && <CallPanel />}
@@ -215,7 +215,7 @@ function CallPanel() {
     ready: "Ready to call",
     connecting: "Connecting…",
     microphone: "Waiting for microphone access…",
-    live: remote ? "Call connected" : "Waiting for the concierge…",
+    live: remote ? "Call connected" : "Waiting for Sage…",
     ended: "Call ended",
   }[phase];
   const MicIcon = muted ? MicOff : Mic;
@@ -246,7 +246,7 @@ function CallPanel() {
           )}
         </div>
         <DialogTitle className="pr-3 font-display text-4xl leading-none font-medium">
-          Dine Cottage’s AI concierge
+          Sage, Dine Cottage’s AI host
         </DialogTitle>
         <DialogDescription className="mt-3 leading-relaxed text-[#525b50]">
           Ask about the menu, explore private dining, or reserve a table.
