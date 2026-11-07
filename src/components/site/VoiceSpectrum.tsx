@@ -73,7 +73,7 @@ export function VoiceSpectrum({ side, context, track, muted = false }: Props) {
     <div className={guest ? "rounded-xl bg-[#e2e9df] p-4" : "rounded-xl bg-[#ece2cf] p-4"}>
       <div className="flex items-center gap-2 text-sm font-medium">
         <Icon aria-hidden="true" size={16} style={{ color }} />
-        {guest ? "You" : "AI concierge"}
+        {guest ? "You" : "Sage"}
       </div>
       <canvas
         ref={canvas}
