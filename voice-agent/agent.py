@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import unicodedata
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
@@ -25,6 +26,86 @@ OPENING_HOURS = {
     5: (time(17, 0), time(23, 0)),   # Saturday
     6: (time(17, 0), time(21, 0)),   # Sunday
 }
+
+PRIVATE_MENU_PACKAGES = {
+    "Family Feast": ("55", "Family Feast — $55 per guest"),
+    "Celebration Supper": ("85", "Celebration Supper — $85 per guest"),
+    "Seasonal Tasting": ("145", "Seasonal Tasting — $145 per guest"),
+}
+MAIN_HALL_MENU_PACKAGE = "À la carte — order at the table"
+
+
+def canonical_menu_package(value: str, booking_type: str) -> str | None:
+    """Map a spoken/displayed menu name to the website's canonical label."""
+    normalized = (
+        unicodedata.normalize("NFKD", value)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .casefold()
+    )
+    tokens = re.findall(r"[a-z]+|\d+", normalized)
+
+    if booking_type == "Main Hall":
+        if tokens in (
+            ["a", "la", "carte"],
+            ["a", "la", "carte", "order", "at", "the", "table"],
+        ):
+            return MAIN_HALL_MENU_PACKAGE
+        return None
+
+    if booking_type != "Private Dining":
+        return None
+
+    ignored_words = {"per", "guest", "guests", "person", "people", "each", "for"}
+    for name, (price, canonical_label) in PRIVATE_MENU_PACKAGES.items():
+        numbers = [token for token in tokens if token.isdigit()]
+        if numbers and numbers != [price]:
+            continue
+        name_tokens = [
+            token
+            for token in tokens
+            if not token.isdigit() and token not in ignored_words
+        ]
+        expected_tokens = re.findall(r"[a-z]+", name.casefold())
+        if name_tokens == expected_tokens:
+            return canonical_label
+
+    return None
+
+
+def build_supabase_booking_row(
+    *,
+    phone: str,
+    name: str,
+    reservation_date: date,
+    reservation_time: str,
+    guests: int,
+    room_preference: str,
+    booking_type: str,
+    event_type: str,
+    menu_package: str,
+    contact: str,
+    allergies: str,
+    special_instructions: str,
+) -> dict[str, str]:
+    """Build the same bookings-table shape used by the website form."""
+    fields = {
+        "name": name.strip(),
+        "date": format_ordinal_date(reservation_date),
+        "reservation_time": reservation_time,
+        "guests": str(guests),
+        "room_preference": room_preference.strip(),
+        "booking_type": booking_type,
+        "event_type": event_type.strip(),
+        "menu_package": menu_package,
+        "contact": contact.strip(),
+        "allergies": allergies.strip(),
+        "special_instructions": special_instructions.strip(),
+    }
+    return {
+        "phone": phone.strip(),
+        "captured_fields_json": json.dumps(fields, ensure_ascii=False),
+    }
 
 
 def format_ordinal_date(value: date) -> str:
@@ -112,6 +193,7 @@ RESERVATIONS AND HOURS (Minneapolis local time)
 - Monday: closed.
 - The website reservation form requires name, phone, guest count, date, time, booking type, event type, and menu selection. Additional contact, allergies/dietary needs, and special instructions can be blank if none were given.
 - Booking type is Private Dining or Main Hall. Private-room choices are Oak Room or Cellar; Main Hall is open dining. Private menu choices are Family Feast — $55 per guest, Celebration Supper — $85 per guest, or Seasonal Tasting — $145 per guest. Main Hall menu choice is “À la carte — order at the table”.
+- Menu choices may be spoken by their short name or their full displayed label with price. Store the full displayed label; do not ask the caller to repeat a menu choice just because they did not say its price.
 - A reservation request is not a confirmed booking. The website says staff will confirm by phone within one business day.
 - Do not promise availability or confirmation. Accept any positive guest count. Reject Monday, past dates/times, or times outside opening hours and offer a valid date/time.
 - The website does not request payment or card details. Never ask the caller for card numbers or payment credentials.
@@ -190,20 +272,22 @@ CONVERSATION AND RESERVATION RULES
             return {"status": "rejected", "reason": "Please provide an event type of 1 to 80 characters, such as Regular dining."}
         if len(contact.strip()) > 120 or len(allergies.strip()) > 500 or len(special_instructions.strip()) > 1000:
             return {"status": "rejected", "reason": "One of the optional details is too long. Ask the caller to shorten it."}
+        canonical_package = canonical_menu_package(menu_package, booking_type)
+        if canonical_package is None:
+            if booking_type == "Main Hall":
+                return {"status": "rejected", "reason": "For Main Hall, choose À la carte — order at the table."}
+            options = "; ".join(PRIVATE_MENU_PACKAGES.values())
+            return {
+                "status": "rejected",
+                "reason": f"Choose a listed private dining menu: {options}. A menu name without its price is fine.",
+            }
+
         if booking_type == "Main Hall":
             if room_preference.strip() != "Main Hall":
                 return {"status": "rejected", "reason": "For Main Hall, room preference must be Main Hall."}
-            if menu_package.strip() != "À la carte — order at the table":
-                return {"status": "rejected", "reason": "For Main Hall, choose à la carte service."}
         else:
             if room_preference.strip() not in {"Oak Room", "Cellar"}:
                 return {"status": "rejected", "reason": "Choose Oak Room or Cellar for Private Dining."}
-            if menu_package.strip() not in {
-                "Family Feast — $55 per guest",
-                "Celebration Supper — $85 per guest",
-                "Seasonal Tasting — $145 per guest",
-            }:
-                return {"status": "rejected", "reason": "Choose one of the listed private event menus."}
 
         time_error = validate_reservation_time(reservation_date, reservation_time)
         if time_error:
@@ -219,24 +303,21 @@ CONVERSATION AND RESERVATION RULES
 
         try:
             parsed_date = date.fromisoformat(reservation_date)
-            fields = {
-                "name": name.strip(),
-                "date": format_ordinal_date(parsed_date),
-                "reservation_time": reservation_time,
-                "guests": str(guests),
-                "room_preference": room_preference.strip()
+            row = build_supabase_booking_row(
+                phone=phone,
+                name=name,
+                reservation_date=parsed_date,
+                reservation_time=reservation_time,
+                guests=guests,
+                room_preference=room_preference.strip()
                 or ("Main Hall" if booking_type == "Main Hall" else "Any private room"),
-                "booking_type": booking_type,
-                "event_type": event_type.strip(),
-                "menu_package": menu_package.strip(),
-                "contact": contact.strip(),
-                "allergies": allergies.strip(),
-                "special_instructions": special_instructions.strip(),
-            }
-            row = {
-                "phone": phone.strip(),
-                "captured_fields_json": json.dumps(fields, ensure_ascii=False),
-            }
+                booking_type=booking_type,
+                event_type=event_type,
+                menu_package=canonical_package,
+                contact=contact,
+                allergies=allergies,
+                special_instructions=special_instructions,
+            )
             session = utils.http_context.http_session()
             async with session.post(
                 f"{supabase_url}/rest/v1/bookings",
